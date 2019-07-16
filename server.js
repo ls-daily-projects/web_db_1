@@ -34,4 +34,14 @@ server.put("/api/accounts/:accountId", async (req, res) => {
     res.json(updatedAccount)
 })
 
+server.delete("/api/accounts/:accountId", async (req, res) => {
+    const { accountId } = req.params
+
+    await db("accounts")
+        .where("id", accountId)
+        .del()
+
+    res.sendStatus(204)
+})
+
 module.exports = server

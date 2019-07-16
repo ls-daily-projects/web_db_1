@@ -20,4 +20,18 @@ server.post("/api/accounts", async (req, res) => {
     res.json(createdAccount)
 })
 
+server.put("/api/accounts/:accountId", async (req, res) => {
+    const { accountId } = req.params
+    const update = req.body
+
+    const id = await db("accounts")
+        .where("id", accountId)
+        .update(update)
+    const updatedAccount = await db
+        .select()
+        .table("accounts")
+        .where("id", id)
+    res.json(updatedAccount)
+})
+
 module.exports = server

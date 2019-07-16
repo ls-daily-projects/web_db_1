@@ -6,42 +6,69 @@ const server = express()
 
 server.use(express.json())
 
-server.get("/api/accounts", async (req, res) => {
-    const accounts = await db("accounts")
-    res.json(accounts)
+const router = express.Router()
+
+router.get("/api/accounts", async (_req, res, next) => {
+    try {
+        const accounts = await db("accounts")
+        res.json(accounts)
+    } catch (error) {
+        next(error)
+    }
 })
 
-server.post("/api/accounts", async (req, res) => {
-    const [id] = await db.insert(req.body).into("accounts")
-    const createdAccount = await db
-        .select()
-        .table("accounts")
-        .where("id", id)
-    res.json(createdAccount)
+router.post("/api/accounts", async (req, res, next) => {
+    try {
+        const [id] = await db.insert(req.body).into("accounts")
+        const createdAccount = await db
+            .select()
+            .table("accounts")
+            .where("id", id)
+        res.json(createdAccount)
+    } catch (error) {
+        next(error)
+    }
 })
 
-server.put("/api/accounts/:accountId", async (req, res) => {
+router.put("/api/accounts/:accountId", async (req, res, next) => {
     const { accountId } = req.params
     const update = req.body
 
-    const id = await db("accounts")
-        .where("id", accountId)
-        .update(update)
-    const updatedAccount = await db
-        .select()
-        .table("accounts")
-        .where("id", id)
-    res.json(updatedAccount)
+    try {
+        const count = await db("accounts")
+            .where("id", accountId)
+            .update(update)
+        const err422 = Error("Couldn't Update")
+        if (count === 0) return next(err422)
+        const account = await db("accounts")
+            .where("id", accountId)
+            .first()
+        res.json(account)
+    } catch (error) {
+        next(error)
+    }
 })
 
-server.delete("/api/accounts/:accountId", async (req, res) => {
+router.delete("/api/accounts/:accountId", async (req, res, next) => {
     const { accountId } = req.params
 
-    await db("accounts")
-        .where("id", accountId)
-        .del()
+    try {
+        await db("accounts")
+            .where("id", accountId)
+            .del()
 
-    res.sendStatus(204)
+        res.sendStatus(204)
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+})
+server.use(router)
+server.use((err, _req, res, _next) => {
+    res.status(err.status || 500).json({
+        error: err.name,
+        message: err.message
+    })
 })
 
 module.exports = server
